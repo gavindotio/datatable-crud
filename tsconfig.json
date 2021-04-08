@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "lib": ["dom", "ES2017", "ESNext.AsyncIterable"],
+    "outDir": "lib/",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "src/*.ts"],
+  "exclude": ["node_modules", "lib"]
+}

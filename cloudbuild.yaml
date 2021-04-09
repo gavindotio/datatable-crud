@@ -1,0 +1,16 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "gcr.io/$PROJECT_ID/datatable-crud:$SHORT_SHA",
+        "-t",
+        "gcr.io/$PROJECT_ID/datatable-crud:latest",
+        ".",
+      ]
+images:
+  [
+    "gcr.io/$PROJECT_ID/datatable-crud:$SHORT_SHA",
+    "gcr.io/$PROJECT_ID/datatable-crud:latest",
+  ]

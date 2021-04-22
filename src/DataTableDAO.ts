@@ -1,36 +1,76 @@
 import { Db, ObjectID } from "mongodb";
-import { reduce } from "lodash";
+import { map, reduce } from "lodash";
 
 export class DataTableDAO {
-  private readonly collection;
+  // private readonly collection;
   private readonly schemaCollection;
-  private readonly dataTableId;
-  private tableSchema;
+  private readonly projectId;
+  private readonly db;
+  private tableSchema = [];
 
-  constructor({ db, dataTableId }: { db: Db; dataTableId: string }) {
+  constructor({ db, projectId }: { db: Db; projectId: string }) {
     this.schemaCollection = db.collection("dataTableSchemas");
-    this.collection = db.collection(dataTableId);
-    this.dataTableId = dataTableId;
+    this.db = db;
+    // this.collection = db.collection(dataTableId);
+    this.projectId = projectId;
   }
 
-  async getTableSchema() {
-    if (!this.tableSchema) {
-      this.tableSchema = await this.schemaCollection.findOne({
-        _id: ObjectID(this.dataTableId),
+  async getTableSchema({ entityName }) {
+    if (!this.tableSchema[entityName]) {
+      const schema = await this.schemaCollection.findOne({
+        projectId: this.projectId,
+        name: entityName,
       });
+
+      this.tableSchema[entityName] = schema;
+      console.log({ schema });
     }
 
-    return this.tableSchema;
+    return this.tableSchema[entityName];
   }
 
-  async findById({ id }: { id: string }) {
-    const tableSchema = await this.getTableSchema();
+  async findById({ id, entityName }: { id: string; entityName: string }) {
+    const tableSchema = await this.getTableSchema({ entityName });
     console.log(JSON.stringify(tableSchema));
 
+    if (!tableSchema) {
+      throw new Error(
+        `Table ${entityName} not found in project ${this.projectId}`
+      );
+    }
+
+    const collection = this.db.collection(tableSchema._id.toString());
     return this.fromDb(
-      await this.collection.findOne({ _id: ObjectID(id) }),
+      await collection.findOne({ _id: ObjectID(id) }),
       tableSchema
     );
+  }
+
+  async find({ entityName }: { entityName: string }) {
+    const tableSchema = await this.getTableSchema({ entityName });
+    console.log(JSON.stringify(tableSchema));
+
+    if (!tableSchema) {
+      throw new Error(
+        `Table ${entityName} not found in project ${this.projectId}`
+      );
+    }
+
+    const collection = this.db.collection(tableSchema._id.toString());
+    const results = await collection
+      .find(
+        {},
+        {
+          limit: 50,
+        }
+      )
+      .toArray();
+
+    console.log({ results });
+
+    return map(results, (result) => {
+      return this.fromDb(result, tableSchema);
+    });
   }
 
   fromDb(dbEntity, tableSchema) {

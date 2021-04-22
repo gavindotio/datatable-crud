@@ -1,7 +1,6 @@
 import { MongoClient } from "mongodb";
 
-export const dataTableId =
-  process.env.DATA_TABLE_ID || "605ad826365effdb930919be";
+export const projectId = process.env.PROJECT_ID || "603b65dbb9540a21983d3fa1";
 export const port = process.env.PORT || "5000";
 const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017";
 const mongoDbName = process.env.MONGODB_DB_NAME || "gavin-io";

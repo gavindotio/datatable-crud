@@ -1,5 +1,5 @@
 import { Db, ObjectID } from "mongodb";
-import { map, reduce } from "lodash";
+import { isInteger, isUndefined, map, reduce } from "lodash";
 
 export class DataTableDAO {
   // private readonly collection;
@@ -23,15 +23,23 @@ export class DataTableDAO {
       });
 
       this.tableSchema[entityName] = schema;
-      console.log({ schema });
     }
 
     return this.tableSchema[entityName];
   }
 
+  async getEntityNames() {
+    const schemas = await this.schemaCollection
+      .find({
+        projectId: this.projectId,
+      })
+      .toArray();
+
+    return map(schemas, "name");
+  }
+
   async findById({ id, entityName }: { id: string; entityName: string }) {
     const tableSchema = await this.getTableSchema({ entityName });
-    console.log(JSON.stringify(tableSchema));
 
     if (!tableSchema) {
       throw new Error(
@@ -48,7 +56,6 @@ export class DataTableDAO {
 
   async find({ entityName }: { entityName: string }) {
     const tableSchema = await this.getTableSchema({ entityName });
-    console.log(JSON.stringify(tableSchema));
 
     if (!tableSchema) {
       throw new Error(
@@ -66,8 +73,6 @@ export class DataTableDAO {
       )
       .toArray();
 
-    console.log({ results });
-
     return map(results, (result) => {
       return this.fromDb(result, tableSchema);
     });
@@ -80,10 +85,18 @@ export class DataTableDAO {
 
     const fields = reduce(
       tableSchema.fields,
-      (memo, { id, name }) => {
+      (memo, { id, name, dataType }) => {
+        const sval = dbEntity[`f_${id}`];
+        let val = sval;
+        if (dataType === "INT") {
+          const ival = parseInt(val);
+          if (isInteger(ival)) {
+            val = ival;
+          }
+        }
         return {
           ...memo,
-          [name]: dbEntity[`f_${id}`],
+          [name]: isUndefined(val) ? null : val,
         };
       },
       {}
